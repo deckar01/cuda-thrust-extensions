@@ -1,0 +1,90 @@
+	Document for CUDASTL::HashMap
+
+HashMap is a simple hash table for GPU, it provides an efficient lock-free 
+hash table implementation that allows concurrent read/write. Multiple thr-
+eads can insert/read concurrently, but no delete is allowed.
+
+===========
+Usage
+===========
+  The HashMap is a template class. It is designed to work on GPU, not CPU.
+
+  
+  ------------
+  Including the files
+  ------------
+  You can include the HashMap class into your code by using:
+
+      #include "hash_map.h"
+      using namespace CUDASTL;
+
+  You will need to compile the code using -arch=compute_13 because the c-
+  ode uses atomic operations, which needs this.
+  If you are compiling the code on a 64bit system, you should also define
+  the macro LONG_PTR.
+  An example of the compilation is as follows:
+
+      nvcc use_hash_map.cu -arch=compute_13 -DLONG_PTR
+
+
+  ------------
+  Create a hash map
+  ------------
+  You can create an instance of the HashMap like this:
+
+      HashMap<key_t, value_t, hash_func> * d_hash_map=
+		CreateHashMap(numBuckets, numElements);
+
+  Where the key_t and value_t are the type of key and value. The third pa-
+  rameter hash_func is a functor, which hashes a varaiable of type key_t 
+  to uint32_t. 
+  The function parameter numBuckets is the number of buckets used. Once s-
+  et, the number of buckets cannot be changed. The parameter numElements 
+  is the maximum number of elements that the hash map is supposed to hold.
+  The HashMap class uses a simple memory pool to reserve memory for the n-
+  odes in the hash table. If the number of actual elements exceed numElem-
+  ents, the result is undefined.
+  This function is a __host__ function, which means it can only be called
+  in CPU code. The returned pointer, however, is a device pointer. You can
+  pass the pointer to kernel code.
+
+
+  ------------
+  Delete a hash map
+  ------------
+  When the hash map is no longer useful, you can free the space used by 
+  it by calling DestroyHashMap like this:
+
+      DestroyHashMap(d_hash_map);
+
+  Where d_hash_map is the pointer returned by CreateHashMap().
+
+
+  ------------
+  Insert an element into hash map
+  ------------
+  You can insert a value into the HashMap like this:
+
+      my_hash_map[key]=value;
+
+  The operator[] works like the operator [] in the map class in STL. If 
+  no element with a key value equals to key exists, a node is created and
+  the reference to the corresponding value is returned. If the node alre-
+  ady exists, the reference of value is returned.
+
+
+  ------------
+  Iterating through the elements
+  ------------
+  An iterator class is provided for HashMap. To iterate through all the 
+  elements, you can use:
+
+      for(HashMap<key_t,value_t,hash_func>::Iterator it=hash_map.begin();
+          it!=hash_map.end();++it)
+          // access the content using the it
+
+  Note that the iterator is not threaded. Multiple threads trying to mod-
+  ify the same iterator can cause problem.
+
+
+
